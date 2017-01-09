@@ -1,0 +1,30 @@
+---
+title: "MTB Tracks Utrechtse Heuvelrug"
+author: "M. Klein"
+date: "9-1-2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library("leaflet")
+library("rjson")
+library("plyr")
+library("dplyr")
+library("googleway")
+```
+
+```{r load_tracks}
+json_file <- "./track.json"
+tracks <- fromJSON(file=json_file)
+tracksdf <- do.call("rbind.fill", lapply(tracks$data, as.data.frame))
+tracksdf <- tracksdf %>% mutate(name = as.character(name), color = as.character(color), polyline = as.character(polyline)) %>% filter(id != 8, type == "permanent") 
+muh <- leaflet() %>% setView(lng = 5.40759, lat = 52.01522, zoom = 11) %>% addTiles()
+for (i in 1:nrow(tracksdf)) {
+    decode_track <- decode_pl(tracksdf[i,]$polyline)
+    muh <- muh %>% addPolylines(lng=decode_track$lon, lat=decode_track$lat, color = tracksdf[i,]$color, popup = tracksdf[i,]$name)
+}
+muh <- muh %>% addLegend(position = "bottomleft", labels=tracksdf$name, colors=tracksdf$color)
+muh
+```
+
